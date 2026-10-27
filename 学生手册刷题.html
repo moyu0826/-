@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>学生手册 · 刷题</title>
+<style>
+  :root{
+    --bg:#0b1020; --card:#151c30; --card2:#1d2740; --line:#2c3a5c;
+    --ink:#e8eefc; --dim:#8fa1c7; --accent:#4dabf7; --ok:#5fd39a; --bad:#ff7a7a; --warn:#ffb454;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
+  body{margin:0 auto; padding:14px 12px 100px; max-width:720px; background:var(--bg); color:var(--ink);
+       font:16px/1.7 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+       padding-left:max(12px, env(safe-area-inset-left));
+       padding-right:max(12px, env(safe-area-inset-right));
+       padding-bottom:max(100px, calc(env(safe-area-inset-bottom) + 70px));
+       overscroll-behavior-y:contain}
+  button,.opt,.item,.ck{touch-action:manipulation}
+
+  /* 微信内打开提示 */
+  #wxHint{display:none; background:rgba(255,180,84,.13); border:1px solid rgba(255,180,84,.4);
+          border-radius:10px; padding:11px 13px; margin-bottom:12px; font-size:13px; line-height:1.65; color:var(--warn)}
+  #wxHint b{color:var(--warn)}
+  #wxHint .x{float:right; cursor:pointer; opacity:.6; padding:0 4px}
+
+  .top{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px}
+  .top h1{font-size:19px; margin:0}
+  .top .back{background:none; border:1px solid var(--line); color:var(--dim); border-radius:8px;
+             padding:6px 12px; font-size:13px; cursor:pointer}
+  .top .back:active{background:var(--card)}
+
+  .prog{background:var(--card2); border-radius:8px; height:26px; position:relative; overflow:hidden; margin-bottom:14px}
+  .prog i{position:absolute; left:0; top:0; bottom:0; background:rgba(95,211,154,.3); width:0; transition:.25s}
+  .prog span{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:12.5px}
+
+  /* 首页 */
+  .menu{display:grid; gap:11px}
+  .item{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px; cursor:pointer; transition:.15s}
+  .item:active{background:var(--card2); transform:scale(.99)}
+  .item h3{margin:0 0 4px; font-size:16px}
+  .item p{margin:0; color:var(--dim); font-size:13px}
+  .item .n{float:right; color:var(--accent); font-size:14.5px; font-weight:700; letter-spacing:.3px}
+  .item.special{border-color:var(--warn)}
+  .item.special .n{color:var(--warn)}
+
+  /* 题目区 */
+  .qcard{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 16px; margin-bottom:14px}
+  .qtype{font-size:12px; color:var(--accent); letter-spacing:1px; margin-bottom:10px}
+  .qtext{font-size:16.5px; line-height:1.75; white-space:pre-wrap; word-break:break-word}
+  .blank{color:var(--accent); font-weight:700}
+
+  .opts{margin-top:16px; display:grid; gap:9px}
+  .opt{background:var(--card2); border:1.5px solid var(--line); border-radius:10px; padding:14px 15px;
+       font-size:15.5px; cursor:pointer; transition:.12s; line-height:1.6; min-height:52px;
+       display:flex; align-items:center}
+  .opt:active{transform:scale(.995)}
+  .opt.right{border-color:var(--ok); background:rgba(95,211,154,.14)}
+  .opt.wrong{border-color:var(--bad); background:rgba(255,122,122,.14)}
+  .opt.dim{opacity:.5}
+
+  .tf{display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-top:18px}
+  .tf button{padding:22px; border-radius:12px; border:1.5px solid var(--line); background:var(--card2);
+             color:var(--ink); font-size:19px; font-weight:600; cursor:pointer; min-height:72px}
+  .tf button:active{background:var(--line)}
+  .tf button.ok{border-color:var(--ok); background:rgba(95,211,154,.16)}
+  .tf button.no{border-color:var(--bad); background:rgba(255,122,122,.16)}
+
+  .fillbox{margin-top:16px}
+  .fillbox input{width:100%; background:var(--card2); border:1.5px solid var(--line); border-radius:10px;
+                 padding:13px 14px; color:var(--ink); font-size:16px; outline:none}
+  .fillbox input:focus{border-color:var(--accent)}
+  .fillbox .btns{display:flex; gap:9px; margin-top:10px}
+  .fillbox .btns button{flex:1; padding:12px; border-radius:10px; border:1px solid var(--line);
+                        background:var(--card2); color:var(--ink); font-size:15px; cursor:pointer}
+
+  .ansbox{margin-top:16px; background:rgba(77,171,247,.09); border-left:3px solid var(--accent);
+          border-radius:8px; padding:12px 14px; font-size:14.5px; white-space:pre-wrap; display:none}
+  .ansbox.show{display:block}
+  .ansbox b{color:var(--accent)}
+
+  .actions{display:flex; gap:9px; margin-top:16px}
+  .actions button{flex:1; padding:14px; border-radius:11px; border:0; font-size:15.5px; font-weight:600; cursor:pointer}
+  .btn-next{background:var(--accent); color:#06101f}
+  .btn-next:disabled{opacity:.4}
+  .btn-self{background:var(--card2); color:var(--ink); border:1px solid var(--line) !important}
+
+  .feedback{margin-top:14px; font-size:15px; font-weight:600; text-align:center; padding:10px; border-radius:10px}
+  .feedback.good{color:var(--ok); background:rgba(95,211,154,.1)}
+  .feedback.bad{color:var(--bad); background:rgba(255,122,122,.1)}
+
+  /* 结果页 */
+  .result{text-align:center; padding:30px 16px}
+  .result .big{font-size:52px; font-weight:800; color:var(--accent); line-height:1.2}
+  .result .lbl{color:var(--dim); font-size:14px; margin-bottom:22px}
+  .result .row{display:flex; justify-content:space-around; margin:24px 0; font-size:14px}
+  .result .row div b{display:block; font-size:22px; color:var(--ink)}
+  .result .row .g{color:var(--ok)} .result .row .r{color:var(--bad)}
+  .result button{margin-top:12px; width:100%; padding:15px; border-radius:12px; border:0; font-size:16px;
+                 font-weight:600; cursor:pointer; background:var(--accent); color:#06101f}
+  .result button.sec{background:var(--card2); color:var(--ink); border:1px solid var(--line)}
+
+  .empty{text-align:center; padding:60px 20px; color:var(--dim)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1 id="title">学生手册 · 刷题</h1>
+  <button class="back" id="backBtn" style="display:none" onclick="goHome()">返回</button>
+</div>
+<div id="wxHint">
+  <span class="x" onclick="this.parentNode.style.display='none'">✕</span>
+  <b>建议点右上角「···」→ 用浏览器打开</b><br>
+  微信内置浏览器里有些功能不完整，用系统浏览器（Safari / Chrome / 夸克）体验更好。
+</div>
+<div class="prog" id="progWrap" style="display:none"><i id="progi"></i><span id="progt"></span></div>
+
+<div id="app"></div>
+
+<script>
+// 微信内打开时提示
+if (/micromessenger/i.test(navigator.userAgent)) {
+  document.getElementById('wxHint').style.display = 'block';
+}
+const DATA = {"judge":[{"q":"在校期间，私自下河、下塘游泳者，给予警告直至记过处分。","a":"对"},{"q":"学生可以在学生宿含内从事推销、贩卖等经商活动。","a":"错"},{"q":"学生可以在校内组织、参加学生团体。","a":"对"},{"q":"参与、组织、宣传邪教活动者，给予严重警告处分并移送公安机关处理。","a":"错"},{"q":"无故欠缴学杂费的学生，不能参加本学年度各类奖学金的评定。","a":"对"},{"q":"凡有赌博行为者根据金额大小给予记过或留校察看处分。协同赌博者（含为赌博者提供场所和赌具），给予严重警告处分。","a":"对"},{"q":"入学未满一学期或者毕业前一年的学生不得转学。","a":"对"},{"q":"三好学生标兵的基本条件之一是综合考评总分位于班级前5名","a":"错"},{"q":"凡散发、张贴大小字报，给予当事人严重警告以上处分。","a":"对"},{"q":"旷课100学时以上者，给予开除学籍处分。","a":"对"},{"q":"在寝室同学不反对的情况下，可在学生寝室饲养宠物。","a":"错"},{"q":"学生可在学有余力的前提下参加勤工助学活动，原则上每周不超过 8 小时，每月不超过 40 小时。","a":"对"},{"q":"学校按照专业教学计划组织教学，实施弹性学分制。本科学生基本学习年限为 4 年，最长学习年限为 6 年。","a":"对"},{"q":"学生受处分后，综合考评成绩排名在班级前30％以内的，其警告处分可提前解除。","a":"错"},{"q":"每学期开学时，学生本人应持学生证到所属学院报到、注册。不能如期注册的，应当履行暂缓注册手续，并向所属学院请假，请假时间不得超过 15天。","a":"错"},{"q":"凡有赌博行为者根据金额大小给予记过或留校察看处分。协同赌博者（含为赌博者提供场所和赌具），给予严重警告处分。","a":"对"},{"q":"入学未满一学期或者毕业前一年的学生不得转学。","a":"对"},{"q":"学生在校内组织、参加学生团体，以适当方式参与学校管理，对学校与学生权益相关事务享有知情权、参与权、表决权和监督权。","a":"错"},{"q":"凡受纪律处分的学生，取消其学年度评奖评优资格。","a":"对"},{"q":"为加深同学、老乡情谊，学生可以成立“同乡会”、“同学会”等组织。","a":"错"},{"q":"只要寝室同学同意，学生宿舍（公寓）可以饲养宠物。","a":"错"},{"q":"学生警告、严重警告处分期限为1年，处分期满表现良好按规定予以解除。","a":"错"},{"q":"在有人看管的情况下，可以在宿舍内使用酒精炉、电炉煮东西吃。","a":"错"},{"q":"学校坚持教育与宗教相分离原则，任何组织和个人不得在学校进行宗教活动。","a":"对"},{"q":"大学生在读期间，因创业需要可按学校相关规定提出休学申请。休学创业最长期限不超过1年。","a":"错"},{"q":"打架事件已终止，事后再纠集他人报复打人，给予留校察看直至开除学籍处分。","a":"对"},{"q":"学生进行勤工助学，可以在学生宿舍（公寓）区从事推销、贩卖等经商活动。","a":"错"},{"q":"在校期间，私自下河、下塘游泳者，给予警告或开除处分。","a":"错"},{"q":"凡在学生宿舍（公寓）留宿异性、在学校教学科研场所男女同居或混居一室者，视情节予以警告或严重警告以上处分。","a":"对"},{"q":"学年综合考评总分在班上前5名，都可参评国家奖学金。","a":"错"},{"q":"“六求”素质拓展活动教育实行学分制评价，本科生须获得5个素质拓展活动教育学分方可毕业。","a":"错"},{"q":"不服从学校住宿安排，阻扰学校宿舍调整，情节严重者，给予严重警告处分。","a":"对"},{"q":"参与、组织、宣传邪教活动者，给予严重警告处分并移送公安机关处理。","a":"错"},{"q":"学生公寓管理中，为了满足学生个性化要求，学校可以按照学生经济状况安排寝室。","a":"错"},{"q":"素质拓展活动教育体系，在学生成绩汇总表中汇总为一门必修课，4学分。","a":"对"},{"q":"学生如急需宣传院或校组织的重大活动，可登录非法网站进行宣传。","a":"错"},{"q":"国家奖学金的等级标准是每人每年8000元。","a":"对"},{"q":"国家助学金是用于资助家庭经济困难的全日制普通本专科在校学生。","a":"对"},{"q":"学生团体如果邀请校外知名的组织或人员到校举办讲座等活动，可以不需经学校批准。","a":"错"},{"q":"学生应征参加中国人民解放军可保留学籍至退役后一年。","a":"错"},{"q":"去做心理咨询的同学都是心理不正常的。","a":"错"},{"q":"在学校预约心理咨询是免费的。","a":"对"}],"choice":[{"q":"国家助学金每人每年    元范围内确定。","opts":["A、 1000-3000","B、 2200-4400","C、 3000-6000","D、 1000-4000"],"a":"B"},{"q":"本科学生基本学习年限为     年，最长学习年限为     年。","opts":["A、 4；6","B、 2；4","C、 4；5","D、 2；6"],"a":"A"},{"q":"每学期开学时，未经请假或请假未获批准或请假逾期， 超过报到注册截止日    天不报到注册的，应予退学。","opts":["A、 7","B、 10","C、 14","D、 15"],"a":"C"},{"q":"学生受处分后，综合考评成绩排名在班级前    以内，其记过处分可提前解除。","opts":["A、 10%","B、 20%","C、 30%","D、 40%"],"a":"B"},{"q":"对于缺课旷课超过    以上的学生， 教师可取消其考试资格。","opts":["B、 三分之一","C、 四分之一","D、 五分之一"],"a":"B"},{"q":"学生修读专业教育教学计划规定的课程，每学年所获学分在（  ）分以上者，准予正常升级。","opts":["A、 25","B、 30","C、 35","D、 45"],"a":"C"},{"q":"未经请假或请假未获批准而缺课者，以旷课论处。对于缺课旷课超过（）以上的学生，教师可取消其考试资格。","opts":["A、 五分之一","B、 四分之一","C、 三分之一","D、 一半"],"a":"C"},{"q":"学生对处理或处分决定有异议的，在接到学校处理或处分决定书之日起（ ）个工作日内，可以向申诉处理委员会提出书面申诉。","opts":["A、 5","B、 10","C、 15","D、 30"],"a":"B"},{"q":"新生和在校学生应征参加中国人民解放军（含中国人民武装警察部队），学校保留其入学资格或者学籍至退役后( )年。","opts":["A、 1","B、 2","C、 3","D、 4"],"a":"B"},{"q":"学校按照专业教学计划组织教学，实施弹性学分制。本科学生基本学习年限为4年，最长学习年限为      年，专科学生基本学习年限为3年，最长学习年限为5年 , 国家另有规定的除外。","opts":["A、 5","B、 6","C、 8","D、 7"],"a":"B"},{"q":"学生在读期间，因 创业需要可以按规定程序申请休学，但最长休学期限不超过      年。","opts":["A、 1","B、 2","C、 3","D、 4"],"a":"B"},{"q":"宿舍实行断网制度。断网时间为：周日至周四      ( 次日 )，周五、周六2：00-6:00 断网。","opts":["A、 23：30-6:00","B、 23：00-6:00","C、 23：00-6:00","D、 23：30-6:30"],"a":"A"},{"q":"1994 年 3 月 25 日，湖南农学院更名为","opts":["A、 修业学堂","B、 湖南农业大学","C、 湖南省私立修业高级农业职业学校","D、 湖南省立修业农林专科学校"],"a":"A"},{"q":"学校校徽包括徽志和徽章。校徽是学校的象征。","opts":["A、 校旗","B、 校徽","C、 校歌","D、 校训"],"a":"D"},{"q":"学期学分控制原则：学生选课按照专业人才培养方案进行，每学期选修学分应不低于    学分，一般不超过30学分。","opts":["A、 20","B、 15","C、 30","D、 25"],"a":"A"},{"q":"对于违反普通高等学校学生管理规定和学校其他规定，严重影响学校教育教学秩序、生活秩序以及公共场所管理秩序的，学校给予   处分。","opts":["B、 严重警告","C、 记过","D、 开除学籍"],"a":"D"},{"q":"学生休学一般以    为单位，经学校批准可以续修。","opts":["A、 一个月","B、 三个月","C、 一学期","D、 一学年"],"a":"D"},{"q":"新生可以申请保留入学资格，保留入学资格期间不具有学籍。 新生保留入学资格的期限为     , 国家另有规定的除外。","opts":["A、 1年","B、 2年","C、 3年","D、 4年"],"a":"A"},{"q":"每学期开学时，学生本人应持学生证到所属学院报到、注册。不能如期注册的，应当履行暂缓注册手续，并向所属学院请假，请假时间不得超过       天。","opts":["A、 10","B、 20","C、 14","D、 15"],"a":"C"},{"q":"学生警告、严重警告处分期限为 6 个月，记过、留校察看期限为       。","opts":["A、 1年","B、 6个月","C、 8个月","D、 两年"],"a":"A"},{"q":"一等优秀学生奖学金的评选比例为参评总人数 3％，标准为 2000 元 / 人 / 学年 ；二等优秀学生奖学金的评选比例为参评总人数 10％，标准为     元 / 人 / 学年。","opts":["A、 1100","B、 2000","C、 1000","D、 1500"],"a":"C"},{"q":"参评一等优秀学生奖学金需满足的基本条件有热爱所学专业，学习勤奋，成绩优异，参评当学年度的平均成绩达      分及以上且无不及格课程，三年级及以上学生外语通过相应等级的考试。","opts":["A、 80","B、 85","C、 75","D、 70"],"a":"B"},{"q":"国家奖学金、国家励志奖学金之间不能重复评审，同时各类奖助学金重复评审原则上不超过    。","opts":["A、 2项","B、 3项","C、 4项","D、 5项"],"a":"A"},{"q":"参评“三好学生标兵”，综合考评总分需位于班级前    名 。","opts":["A、 3","B、 5","C、 8","D、 10"],"a":"A"},{"q":"参评“三好学生”，综合考评总分需位于班级前    名","opts":["A、 3","B、 5","C、 8","D、 10"],"a":"D"},{"q":"“三好学生标兵”不超过学院参评总人数的 3%，“三好学生”不超过学院参评总人数的    ，“先进班集体”不超过学院参评班级总数的 10%。","opts":["A、 30%","B、 10%","C、 15%","D、 20%"],"a":"B"},{"q":"国家励志奖学金奖励标准是：5000 元 / 人 / 学年","opts":["A、 3000","B、 5000","C、 8000","D、 4000"],"a":"B"},{"q":"国家奖学金奖励标准是：8000 元 / 人 / 学年","opts":["A、 3000","B、 5000","C、 8000","D、 4000"],"a":"C"},{"q":"学生因故外出或因故不能参加学校组织的教学（不含课程考核）或其它集体活动，必须以书面形式请假，经批准方为有效。由班干部或同班同学持已批准的假条向任课教师或活动组织者备案。请假30 天以上，90 天以下，由    批准（审批）。假期期满应向批准单位及时销假。","opts":["B、 学院分管学生工作的领导","C、 学生工作处呈主管校领导","D、 班主任"],"a":"C"},{"q":"学生有下列哪个情形，应予退学 ：","opts":["A、 受到退学预警告知，下学年所获学分在 25 学分以上的；","B、 累计留级已达 1 次仍不能正常升级的 ；","C、 休学期满，正常到校申请复学的","D、 经学校指定医院确诊，患有疾病或者意外伤残无法继续在校学习的"],"a":"D"},{"q":"学生有下列哪个情形，不得转学 ：","opts":["A、 入学已满一学期","B、 高考成绩高于拟转入学校相关专业同一生源地相应年份录取成绩的 ；","C、 由高学历层次转为低学历层次的 ；","D、 无正当转学理由的。"],"a":"D"},{"q":"蛊惑、纵容他人打架，或为他人打架提供凶器者，视情节轻重，给","opts":["B、 留校察看或警告严重警告或记过","D、 开除学籍"],"a":"C"},{"q":"带头在公共场所吆喝起哄者，并造成不良影响的给予   处分","opts":["B、 严重警告","C、 记过","D、 开除学籍"],"a":"A"},{"q":"“先进团支部”每年评比一次 ；评比实行学院推荐制，评比比例按各学院团支部总数的   推荐，“红旗团支部”由各学院在“先进团支部”中推荐一个支部参加考核答辩确定。","opts":["A、 20%","B、 15%","C、 10%","D、 5%"],"a":"D"},{"q":"在各类正式报刊（含校刊及团刊）、杂志上发表有关团学工作","opts":["B、 校文艺十佳","C、 校体育十佳","D、 校创新十佳"],"a":"A"},{"q":"湖南农业大学优秀毕业生、创新创业优秀毕业生名额需控制在学校当年毕业生总数的   以内，其中优秀毕业生不超过学校评选名额的 90%，创新创业优秀毕业生不超过学校评选名额的10%。","opts":["A、 5","B、 10","C、 15","D、 20"],"a":"A"},{"q":"学生提前完成教育教学计划规定内容，成绩合格，达到学校毕业要求的，可在基本学习年限到期前   申请提前毕业。","opts":["B、 一年","C、 两年","D、 三年"],"a":"B"},{"q":"毕业学生须确保宿舍（公寓）内原有设施齐全，如有损坏须交清赔偿款，方可办理离校手续。学生自毕业离校之日起___天内应离开学生宿舍（公寓），因特殊原因暂不能离校的，应服从后勤服务集团学生宿管中心的统一安排。","opts":["A、 3","B、 5","C、 7","D、 10"],"a":"A"},{"q":"本科专业毕业总学分一般额定为____ 学分左右","opts":["A、 150","B、 160","C、 170","D、 180"],"a":"C"},{"q":"学生选课按照专业人才培养方案进行，每学期选修学分应不低于 _____学分，一般不超过 30 学分。","opts":["A、 15","B、 20","C、 18","D、 22"],"a":"B"},{"q":"本科学生在校学习期间须至少完成1个项目，获得____学时，方可达到《大学生劳动教育》课程服务性劳动教育模块要求。","opts":["A、 2","B、 3","C、 4","D、 5"],"a":"C"},{"q":"考生构成严重作弊的，给予____处分。","opts":["B、 记过","C、 留校察看","D、 开除学籍"],"a":"D"},{"q":"符合法定结婚年龄（男满 22 周岁，女满 20 周岁）的在校学生办理结婚登记或婚姻变更登记前应向___报备。","opts":["B、 学工部","C、 教务处","D、 团委"],"a":"A"},{"q":"下列哪项处分不能解除","opts":["B、 记过","C、 留校察看","D、 开除学籍"],"a":"D"},{"q":"学校每年___ 月份组织学风建设考核评比，考核评比时间段为上一学年度秋季学期开学报到日至下一学年度秋季学期开学报到日止。","opts":["A、 9","B、 10","C、 11","D、 12"],"a":"B"},{"q":"退学的学生，学习时间在一学年以上的，学校发给    ；学习时间不到一学年的，学校发给写实性学习证明。","opts":["B、 学位证书","C、 肄业证书","D、 实习证明"],"a":"C"},{"q":"宿舍（公寓）用电。每间寝室最高额定功率为   。","opts":["A、 400w","B、 500w","C、 800w","D、 1000w多项选择题"],"a":"C"},{"q":"“三好学生”的基本条件下列选项正确的是：","opts":["A、 道德品质优良，行为文明，模范遵守国家法律法规和学校的有关规章制度","B、 综合考评总分位于班级前10名","C、 学年度平均成绩达 80 分以上（含 80 分），单科成绩在 70 分以上或者该课程成绩进入本班前 5 名（但须高于 60 分）","D、 积极参加体育锻炼和文娱活动，身体健康，有良好的卫生行为习惯及良好的心理素质，达到《大学生体质健康标准》"],"a":"ABCD"},{"q":"有以下情形之一的，不予解除处分：","opts":["A、 违反宪法，反对四项基本原则、破坏安定团结、扰乱社会秩序的","B、 触犯国家法律、严重违反治安管理处罚法的","C、 未达到解除处分条件的","D、 受到留校察看处分的开除学籍"],"a":"ABC"},{"q":"学生有下列情形之一，学校给予开除学籍处分：","opts":["A、 违反宪法，反对四项基本原则、破坏安定团结、扰乱社会秩序的","B、 触犯国家法律，构成刑事犯罪的","C、 受到治安管理处罚，情节严重、性质恶劣的","D、 屡次违反学校规定受到纪律处分，经教育不改的"],"a":"ABCD"},{"q":"学生有下列作弊行为之一的，应当认定为一般作弊：","opts":["A、 故意销毁本人试卷、答卷或者考核材料的","B、 通过伪造证件、证明、档案及其他材料获得考核资格或考核成绩的","C、 向考场内发送、传递考核相关信息的","D、 携带具有发送或者接收信息功能的设备参加考核的"],"a":"ABCD"},{"q":"高校毕业生应征入伍服义务兵役享受哪些优惠政策：","opts":["A、 优先报名应征","B、 优先体检政审","C、 优先审批定兵","D、 优先选拔使用"],"a":"ABCD"},{"q":"学生有下列情形之一，学校应予退学处理：","opts":["B、 累计留级已达 3 次仍不能正常升级的","C、 未请假离校连续 14 天未参加学校规定的教学活动的","D、 根据学校指定医院诊断，患有疾病或者意外伤残不能继续在校学习的"],"a":"ACD"},{"q":"“三好学生标兵”评选基本条件下列选项正确的是：","opts":["A、 道德品质优良，行为文明，模范遵守国家法律法规和学校的有关规章制度","B、 热爱所学专业，勤奋学习，成绩优异，学年度平均成绩达 85 分以上（含 85 分）","C、 单科成绩在 80 分以上或者该课程成绩进入本班前 3 名（但须高于 60 分）","D、 综合考评总分位于班级前5名"],"a":"ABC"},{"q":"学生有下列作弊行为之一的，应当认定为一般作弊：","opts":["A、 故意销毁本人试卷、答卷或者考核材料的","B、 通过伪造证件、证明、档案及其他材料获得考核资格或考核成绩的","C、 向考场内发送、传递考核相关信息的","D、 携带具有发送或者接收信息功能的设备参加考核的"],"a":"ABCD"},{"q":"高校毕业生应征入伍服义务兵役享受哪些优惠政策：","opts":["A、 优先报名应征","B、 优先体检政审","C、 优先审批定兵","D、 优先选拔使用( AB  )10.未经批准，私自在外租房住宿者，给予什么处分警告","B、 严重警告","C、 记过以上","D、 留校察看以上( ACD  )11.学生有下列情形之一，应予退学","A、 累计留级已达两次仍不能正常升级；","B、 请假超过30天的;","C、 未请假离校连续14天未参加学校规定的教学活动的;","D、 每学期开学时，未经请假或请假未获批准或请假逾期，超过14天不报到注册的。( ABC)12.“三好学生”标兵的基本条件是:","A、 道德品质优良。行为文明，模范遵守国家法律和学校的有关规章制度;","B、 学年度平均成绩在85分以上(含85分);","C、 学年度单科成绩在80分以上;","D、 综合考评总分位于班上前5名;( ACD)13.以下奖学金评定说法正确的是:","A、 学校二等奖学金的学年度平均成绩要80分以上;","B、 学校二等奖学金的综合考评总分居班上前15名;","C、 学校二等奖学金学年度单科成绩要在75分以上;","D、 英语。计算机按规定过级;( ACD)14.对违反公共秩序者，给予相应处分正确的是:","A、 带头在公共场所哟吆喝起哄者，给予警告处分；","B、 在宿舍(公寓)内饲养宠物者，给予记过处分；","C、 在公共场所乱砸、乱抛物品，情节严重者，给予严重警告或记过处分；","D、 在宿舍(公寓)区燃放烟花、鞭炮者，给予警告或严重警告处分；( BC )15.全日制普通本科毕业生，有下列情况之一的不授予学士学位","A、 遵守法律法规遵守校纪校规，有良好的道德和文明风尚;","B、 因考试舞弊而受到处分者;","C、 课程成绩算术平均值低于70分(不含70分)且补考达不到要求者;","D、 身心健康，能胜任本专业所从事的工作。( CD )16.下列哪些情形应当认定为考试一般作弊:","A、 未在规定的作为参加考核;","B、 在考核过程中旁窥、交头接耳、互打暗号或者手势的;","C、 向考场内发送、传递考核相关信息的;","D、 传、接物品或者交换试卷、答案的。(  ABC )17.我校的办学理念包括;","A、 质量立校;","B、 学术兴校;","C、 人才强校;","D、 以学生为中心，以教师为主导;(  ABC )18.学校已履行了相应职责，行为并无不当的，无法律责任。","A、 学生自杀、自伤的;","B、 在对抗性或者具有风险性的体育竞赛活动中发生意外伤害的;","C、 地震、雷击、台风、洪水等不可抗的自然因素造成的;","D、 来自学校外部的突发性、偶发性侵害造成的;"],"a":"ABCD"},{"q":"学生在校内组织、参加学生团体，以适当方式参与学校管理，对学校与学生权益相关事务享有：","opts":["A、 知情权","B、 参与权","C、 表达权","D、 监督权"],"a":"ABCD"},{"q":"以下关于国家奖学金参评条件说法正确的是：","opts":["A、 热爱社会主义祖国，拥护中国共产党的领导。","B、 自觉遵守宪法和法律，遵守学校各项规章制度和大学生文明 行为准则，全年无不良行为和违纪现象。","C、 诚实守信，道德品质优良。","D、 在校期间学习成绩特别优秀：平均成绩为80分以上，单科成绩80分以上，英语通过学校规定的相应标准，综合考评总分位居班上前3名。"],"a":"ABC"},{"q":"学生违反学校纪律，有下列哪些情形之一，且未造成严重后果的，可以从轻或减轻处分 ：","opts":["B、 由他人胁迫或诱骗而违纪，并能主动揭发，认错态度好","C、 积极挽回违纪行为造成的损失","D、 有立功表现"],"a":"BCD"},{"q":"学生违反学校纪律，有下列哪些情形之一的，可以从重或加重处分：","opts":["A、 在本校曾受过处分，再次违纪的","B、 故意隐瞒、歪曲、捏造事实，妨碍有关部门、单位调查， 违纪后认错态度不好，特别是拒不承认错误的","C、 对有关人员进行威胁恐吓、打击报复的","D、 勾结、指使校外人员，违反本办法或其它相关规定的"],"a":"ABCD"},{"q":"考生不遵守考场纪律，不服从考核工作人员的安排与要求，有下列哪些行为之一的，应当认定为考核一般性违纪：","opts":["A、 携带规定以外的物品进入考场或者在开考前未放到指定位置的","B、 未在规定的座位参加考核的","C、 用规定以外的笔或者纸答题或者在试卷规定以外的地方 书写姓名、考号或者以其他方式在答卷上标记信息的","D、 有其他违反考场规则但尚未构成作弊行为的"],"a":"ABCD"},{"q":"考生以不正当手段获得或者试图获得试题答案、考核成绩，有下列作弊行为之一的，应当认定为严重作弊：","opts":["A、 用规定以外的笔或者纸答题或者在试卷规定以外的地方 书写姓名、考号或者以其他方式在答卷上标记信息的","B、 有其他违反考场规则但尚未构成作弊行为的","C、 由他人代替考试的","D、 替他人参加考试的"],"a":"CD"},{"q":"考生以不正当手段获得或者试图获得试题答案、考核成绩，考核过程中或考后通过视频录像回放发现有下列作弊行为之一的，应当认定为一般作弊：","opts":["A、 携带与考核内容相关的文字材料或者存储（含利用手机于考前存储）有与考核内容相关资料的电子设备参加考核的","B、 抄袭或合作抄袭试题答案、与考核内容相关的文字、电子资料的","C、 与教师或考核工作人员串通，获得考题或虚假成绩的","D、 胁迫教师、工作人员出示虚假成绩的"],"a":"AB"},{"q":"大学生创新创业团队分为创新团队和创业团队两个类别，按               和        两个层次进行分级管理。","opts":["B、 院级团队","C、 班级团队","D、 校级团队"],"a":"BD"},{"q":"处分决定书包括下列哪些内容 ：","opts":["A、 学生的基本信息","B、 作出处分的事实和证据","C、 处分的种类、依据、期限","D、 申诉的途径和期限"],"a":"ABCD"},{"q":"有下列情形之一，不得转学：","opts":["A、 入学未满一学期或者毕业前一年的","B、 高考成绩低于拟转入学校相关专业同一生源地相应年份录取成绩的","C、 由低学历层次转为高学历层次的","D、 以定向就业招生录取的"],"a":"ABCD"},{"q":"学生在校期间依法享有下列权利","opts":["A、 参加学校教育教学计划安排的各项活动，使用学校提供的教育教学资源。","B、 参加社会服务、勤工助学，在校内组织、参加学生团体及文娱体育等活动。","C、 根据有关规定，申请奖学金、助学金及助学贷款。","D、 在思想品德、学业成绩等方面获得公正评价，完成学校规定学业后获得相应的学历证书、学位证书"],"a":"ABCD"},{"q":"学生在校期间依法履行下列义务 ：","opts":["A、 遵守法律法规","B、 遵守学校《章程》和管理制度","C、 努力学习，完成规定学业","D、 按规定缴纳学费及有关费用，履行获得国家助学贷款及助学金的相应义务"],"a":"ABCD"},{"q":"下列哪些人员属于湖南农业大学校友 ：","opts":["A、 曾经在学校及其分支机构接受过学历教育的学生、接受过非学历教育培训的学员","B、 曾经在学校及其分支机构工作过的教职工","C、 学校授予名誉教授、名誉博士的社会人士","D、 亲属在湖南农业大学工作的社会人士"],"a":"ABC"},{"q":"有下列哪些情况之一者，不得转专业 ：","opts":["A、 未有过转专业记录的","B、 新生入学未满一学期或本科三年级以上或专科二年级以上的","C、 以特殊招生形式录取的（如专升本）","D、 国家有相关规定或者录取前与学校有明确约定的（如免费师范生、吐鲁番地区定向免费师范生、内地新疆班、职高对口类等）；"],"a":"BCD"},{"q":"具备下列情形之一者，认定为特别困难等级 ：","opts":["A、 属于政府部门认定的建档立卡贫困家庭学生","B、 属于民政部门认定的最低生活保障家庭学生、特困供养学生、孤儿、事实无人抚养学生","C、 属于退役军人事务部门认定的烈士子女","D、 属于残联部门认定的家庭经济困难残疾学生或残疾人子女"],"a":"ABCD"},{"q":"以下哪些不属于参评一等优秀学生奖学金的基本条件 ：","opts":["A、 热爱社会主义祖国，拥护中国共产党的领导","B、 遵守宪法和法律，遵守高等学校学生行为准则和学校规章制度","C、 热爱所学专业，学习勤奋，成绩优异，参评当学年度的平均成绩达 80分及以上且无不及格课程，三年级及以上学生外语通过相应等级的考试","D、 参评当学年度的综合考评排名位于班级前5 名"],"a":"CD"},{"q":"在宿舍（公寓）内严禁出现下列行为，违者按照其实际情况给予相应处分和处罚，情节严重者，追究其法律责任 ：","opts":["A、 在宿舍（公寓）内私自留客住宿 ；","B、 赌博或为赌博提供场所 ；","C、 进行封建迷信等活动 ；","D、 私接电源，私拉电线，使用取暖电器、炊具电器、电热设备、功率转换器及其他大功率电器设备，如煤油炉、酒精炉、热得快、电饭锅、电水壶、电炉、电热杯、电热锅、电热棒、电熨斗、电热毯等 ；私自安装洗衣机、电视机、空调、热水器等电器设备 ；","E、 饲养宠物 ；"],"a":"ABCDE"},{"q":"强化大学生的_____、_____、_____、_____意识，构建“学校—学院—年级—班级—寝室”五级学风建设自我管理体","opts":["A、 自我管理","B、 自我服务","C、 自我教育","D、 自我监督"],"a":"ABCD"},{"q":"以下属于“年度文明寝室”评选条件的是：","opts":["A、 具有积极上进、乐于助人、遵纪守法、热爱集体、朝气蓬勃、文明健康的良好风气 ；","B、 寝室成员积极开展健康有益的社会实践活动和文化科技活动，获得校级及以上社团活动、学科竞赛、体育比赛、文化科技活动等奖励；","C、 内务整洁有序，积极配合学校（学院）相关检查工作，本学年度无违纪违规情况，本学年度被评为校级文明寝室；","D、 寝室开展特色文化建设，营造文明、健康、和谐、友爱的寝室文化氛围；无人受到党、团、行政警告及以上处分。"],"a":"ABCDE"},{"q":"以下属于“十佳学习之星”评选条件的是：","opts":["A、 具有良好的思想政治素质、较强的集体荣誉感，遵守校纪校规，无违法违纪行为，无旷课情况 ；","B、 自我管理能力强，学习习惯好，学习目标明确 ；","C、 本学年度获得国家奖学金，且公开出版（发表）与专业相关的专著、论文或获得科技发明专利，或在国家、省、市等各级各类学科竞赛中获奖，或取得其他突出的学术学业成绩者优先。"],"a":"ABC"},{"q":"“六求”素质拓展活动教育与大学生劳动教育有机结合，将《大学生劳动教育》课程中服务性劳动教育模块统筹到“六求”素质拓展活动教育常规项目之中，设置了哪些服务性劳动教育项目？","opts":["A、 公益志愿服务","B、 博士团社会实践","C、 “三下乡”社会实践","D、 专业服务性实践","E、 专业研学","F、 专项调研"],"a":"ABCDEF"},{"q":"全日制普通本科生，同时具备下列条件者，授予相应学科门类学士学位 ：","opts":["A、 遵守《高等学校学生行为准则》。","B、 完成教学计划的各项要求，经审核准予毕业。","C、 课程成绩算术平均值不低于60分。","D、 在籍期间未因考核作弊或其他学术不端行为受过留校察看处分。"],"a":"ABD"},{"q":"学校按照“整体规划，超前发展…；充分利用，服务教学”的建网思路，努力打造一流校园网络，建成“40G 双核心、万兆到楼栋、千兆到房间，百兆到桌面”的安全、稳定、高效的校园网络，目前，学校已建成覆盖____、_____、_____、_____等主要区域的有线无线一体化网络环境，校园网用户可以通过有线或无线方式无感知认证、方便快捷地访问互联网。","opts":["A、 全校教学区","B、 办公区","C、 学生宿舍","D、 公共区"],"a":"ABCD"},{"q":"学校在对学生作出处分决定时，做到听取学生或者其代理人的陈述和申辩，并出具处分决定书。处分决定书包括下列内容 ：","opts":["A、 学生的基本信息 ；","B、 作出处分的事实和证据 ；","C、 处分的种类、依据、期限 ；","D、 申诉的途径和期限 ；","E、 其他必要内容。"],"a":"ABCD"},{"q":"有以下情形之一的，不予解除处分 ：","opts":["A、 违反宪法，反对四项基本原则、破坏安定团结、扰乱社会秩序的 ；","B、 触犯国家法律、严重违反治安管理处罚法的 ；…","C、 未达到解除处分条件的 ；","D、 受到开除学籍处分的"],"a":"ABCD"},{"q":"受记过处分的学生，符合下列条件之一者，其记过处分可提","opts":["A、 符合解除留校察看处分条件之一的 ；","B、 学生受处分后，综合考评成绩排名在班级前 20% 以内，或获得学校单项奖学金（含企业奖学金）的 ；","C、 学生受处分后，在市级、校级举办的各类比赛、竞赛中（如科技创新、文体竞赛、专业竞赛及教师职业技能相关竞赛等）获得前三名奖励的 ；","D、 学生受处分后，因见义勇为、抢险救灾、志愿服务等表现突出，受到校级及以上表彰的。"],"a":"ABCD"},{"q":"参加勤工助学活动的学生应履行以下哪些义务 ：","opts":["A、 认真完成教学计划规定的学习任务，积极参加学校和学院组织的集体活动，在学有余力的情况下参加勤工助学活动","B、 开始勤工助学活动前与有关单位签订协议，保护自身合法权益，并认真履行协议","C、 私自转让勤工助学岗位；","D、 遵守国家法律、法规，遵守学校各项规章制度以及用人单位的各项规章制度，维护学校声誉"],"a":"ABD"},{"q":"学生入学后，学校在 3 个月内按照国家招生规定进行复查。复查内容主要包括以下哪些方面 ：","opts":["A、 录取手续及程序等是否合乎国家招生规定","B、 所获得的录取资格是否真实、合乎相关规定","C、 本人及身份证明与录取通知、考生档案等是否一致","D、 身心健康状况是否符合报考专业或者专业类别体检要求，能否保证在校正常学习、生活 ；"],"a":"ABCD"},{"q":"学风建设优秀班级评选条件包含下列哪几项？","opts":["A、 本学年度学院学风建设日常考核中班级排名前三名","B、 本学年度无人受到党、团、行政警告及以上处分","C、 宿舍（公寓）和个人卫生情况良好，日常检查中无内务不合格寝室","D、 班级成员平均成绩均在 80 分以上"],"a":"ABC"},{"q":"学风建设优秀学生干部评选条件有下列哪几项？","opts":["A、 政治立场坚定，积极维护学校的稳定与发展","B、 关心集体，团结同学，作风优良，身心健康","C、 遵纪守法，本学年度无通报批评及其它违纪处分","D、 成绩优良，本学年度无课程补考，平均成绩75分以上"],"a":"ABC"},{"q":"学校心理中心的心理咨询预约方式有","opts":["A、 电话预约","B、 学生在线微信公众号","C、 现场预约","D、 网站预约"],"a":"ABC"}],"fill":[{"q":"学校办学始于 1903 年创办的           ，周震鳞、黄兴、徐特立、毛泽东等先后在此执教。1951 年 3 月由修业学堂发展而来的湖南省立修业农林专科学校与湖南大学农业学院合并组建           ，毛泽东主席亲笔题写校名。1994 年 3 月更名为             。","a":"修业学堂   湖南农学院   湖南农业大学"},{"q":"湖南农业大学校训为：        、        、        、        。","a":"朴诚、奋勉、求实、创新"},{"q":"新生入学宣誓誓词中的“农大精神”为：        、        、        、        。","a":"爱校敬业、求真务实、艰苦奋斗、乐于奉献"},{"q":"国家奖学金的等级标准为每人    元／年。国家励志奖学金为每人    元／年。","a":"8000 5000"},{"q":"学校校庆日为每年的          。","a":"10月8日"},{"q":"学生宿舍（公寓）实行封闭管理。开门时间为         ，关门时间为：周日至周四         ，周五、周六         （门禁时间同步）。","a":"6：00   23：00   23：30"},{"q":"学生一学期累计旷课41- 60学时者，给予         处分；旷课61 - 80学时者，给予          处分。","a":"严重警告 记过"},{"q":"以学业年级为单位，修读该专业学业年级教育教学计划规定的课程，所获学分在     以上者，准予正常升级;所获学分在     分以下者，应予以留级。","a":"35；25分至35"},{"q":"观看反动、淫秽书刊和音响制品，登录非法网站或网页，给予     或者记过处分;利用互联网制造、发布、传播色情、反动言论以及其他有害信息者，给予     处分。","a":"严重警告；留校察看或开除学籍"},{"q":"学生考试构成一般作弊的，该门课程成绩无效，给予     处分。","a":"留校察看"},{"q":"一等奖学金的基础条件需热爱所学专业，勤奋学习，成绩优异，学年度平均成绩达     分以上，单科成绩一般应在     分以上，英语、计算机通过规定级别。","a":"85；80"},{"q":"“六求”素质拓展活动教育学分认证范围包括;      、        、求美文化艺术、求特个性发展、求强就业创业6类活动教育项目。","a":"求真学术科技；求善文明道德"},{"q":"学校禁止在籍学生成立     、同学会等组织。","a":"同乡会"},{"q":"学校的办学理念是     、     、      。","a":"质量立校、学术兴校、人才强校"},{"q":"学生因患有特殊疾病或其他特殊情况，不宜居住集体宿舍（公寓），需本人书面申请，      书面担保，经所在学院和           批准后，可不在学生集体宿舍（公寓）住宿。","a":"家长；学生工作处"},{"q":"学生选课按照专业人才培养方案进行，每学期选修课学分应不低于    学分，一般不超过    学分。","a":"20；30"},{"q":"学生因故不能参加学校(学院)组织的教育教学或其他集体活动，必须以书面形式请假，经批准方为有效。请假 1 天以内（含 1 天）由        审批。","a":"年级辅导员"},{"q":"警告、严重警告处分的解除：由本人申请，      签署意见，所在学院主管学生工作      审核同意，院党政联席会审定，学院公示，报学生工作处备案后生效；","a":"班主任及年级辅导员；副书记"},{"q":"符合解除处分条件的学生本人原则上应在处分考察期结束前      个月提出申请","a":"1"},{"q":"学校校徽包括徽志和徽章。校徽是学校的象征。学校徽志为圆形。红色环形上方金色的中文校名为      手书体“湖南农业大学”，下方为英文校名 ；中间为第一教学楼图案，下面为深绿色的草地 ；“1903”为湖南农业大学办学起始年份。","a":"毛泽东"},{"q":"学生修读专业教育教学计划规定的课程，每学年所获学分在      分以上者，准予正常升级 ；每学年所获学分在      分以上至       分以下者，应予留级.","a":"35；25,；35"},{"q":"学校为获奖的先进集体及个人颁发荣誉证书，年度文明寝室奖励_____ 元 / 间，十佳学习之星奖励       元 / 人，十佳学习之星提名奖奖励      / 人。","a":"500；5000；2000"},{"q":"理论课教学每       学时计 1 学分 ；单独开设的实验课每___学时计 1 学分；体育课、艺术欣赏类课程每      学时计 1 学分","a":"16；24；30"},{"q":"“六求”素质拓展活动教育学分申报分      和      两种方式。","a":"单位申报；个人申报"},{"q":"学士学位证书遗失或损坏，经本人申请，学校出具具有同等效力的      。","a":"学士学位证明书"},{"q":"在宿舍（公寓）内饲养宠物者，给予      或      处分。","a":"警告；严重警告"},{"q":"学校心理中心的心理咨询预约电话是________________","a":"0731-84673647"},{"q":"A、五分之一                    B、四分之一","a":"C、三分之一                    D、一半"},{"q":"警告或严重警告           B、留校察看或警告","a":"严重警告或记过          D、开除学籍"},{"q":"A、400w              B、500w         C、800w         D、1000w","a":"多项选择题"},{"q":"( AB  )10.未经批准，私自在外租房住宿者，给予什么处分","a":"警告   B、严重警告   C、记过以上  D、留校察看以上"},{"q":"( ACD  )11.学生有下列情形之一，应予退学","a":"A、累计留级已达两次仍不能正常升级；"},{"q":"(  ABC )17.我校的办学理念包括;","a":"A、质量立校;"},{"q":"(  ABC )18.学校已履行了相应职责，行为并无不当的，无法律责任。","a":"A、学生自杀、自伤的;"}],"qa":[{"q":"学校纪律处分的5个种类（10分）","a":"（一）警告 ；\n（二）严重警告 ；\n（三）记过 ；\n（四）留校察看 ；\n（五）开除学籍。"},{"q":"学生应当做好防范，确保安全，不轻信他人、不贪图小利，防范电信诈骗，远离传销组织。请至少列举出5个电信诈骗类型？","a":"例：\n校园贷款诈骗\n冒充客服诈骗\n兼职刷单诈骗\n投资理财诈骗\n网络购物诈骗\n冒充领导诈骗\n网络赌博诈骗\n冒充好友诈骗\n征婚交友诈骗\n..."},{"q":"学生因故外出或因故不能参加学校组织的教学或其它集体活动，必须以书面形式请假，经批准方为有效。请分别根据请假天数列出学校请假审批制度。（10分）","a":"请假 1 天以内（含 1 天）由年级辅导员审批 ;\n请假 2天以上，30 天以下（指连续计算，包括节假日和周末，下同），由学院分管学生工作的领导审批 ；\n30 天以上，90 天以下，由学生工作处呈主管校领导批准（审批）。\n假期期满应向批准单位及时销假。学生因故不能参加学校组织的教学或其它集体活动达 90 天以上者应办理休学手续。"},{"q":"湖南农业大学家庭经济困难学生资格认定管理办法根据学生家庭贫困程度，可将家庭 经济困难学生分别认定为","a":"家庭经济特别困难学生（特困生）\n家庭经济比较困难学生（贫困生）\n家庭经济一般困难学生（一般困难生）"},{"q":"奖助学金的评定程序与步骤","a":"（一）班级成立由班主任担任组长的班级奖助学金推选工作小组。\n（二）班级奖助学金推选工作小组按学校规定组织本班奖助学金推选工作，并在班级公布推选结果。\n（三）学院学生工作办公室初审，学院党政联席会复审，并公示复审结果。\n（四）党委学生工作部审核，学校学生工作指导委员会审定，并公示审定结果"},{"q":"解除处分的必要条件是什么？学生受到警告或严重警告处分满 6个月、受到记过或留校察看处分满 12 个月以上，对其所犯错误的性质、后果及危险性有深刻的认识，并有改正错误的实际表现，每 3 个月向所在学院提交书面思想汇报一份。","a":""},{"q":"全日制普通本科生，同时具备下列条件者，授予相应学科门类学士学位","a":"（一）遵守《高等学校学生行为准则》。\n（二）完成教学计划的各项要求，经审核准予毕业。\n（三）课程成绩算术平均值不低于 70 分（含，下同）。\n（四）在籍期间未因考核作弊或其他学术不端行为受过留校察看处分。\n警告、严重警告处分的解除程序\n由本人申请，班主任及年级辅导员签署意见，所在学院主管学生工作副书记审核同意后，院党政联席会审定，学院公示，报学生工作处备案后生效\n“三好学生”的基本条件 ：\n（一）爱社会主义祖国，拥护中国共产党的领导 ；\n（二）道德品质优良，行为文明，模范遵守国家法律法规和学校的有关规章制度，群众基础好 ；\n（三）综合考评总分位于班级前 10 名 ；\n（四）热爱所学专业，勤奋学习，成绩优异，参评当学年度所修课程的平均学业成绩达 80 分及以上且无不及格课程，成绩计算方式以教务处公布的为准 ；三年级及以上学生外语通过大学英语四级考试（体育艺术类、专升本、职高对口班学生参加大学英语四级考试成绩在 360 分以上）或同等级别考试的优先参评 ；\n（五）积极参加社会实践活动，善于学习和吸收新知识，有较强的解决实际问题的能力和开拓创新精神 ；\n（六）积极参加体育锻炼和文娱活动，身体健康，有良好的卫生行为习惯及良好的心理素质，达到《大学生体质健康标准》。"},{"q":"学生在校期间依法履行哪些义务？","a":"（一）遵守宪法和法律、法规 ；\n（二）遵守学校《章程》和规章制度 ；\n（三）恪守学术道德，完成规定学业 ；\n（四）按规定缴纳学费及有关费用，履行获得贷学金及助学金\n的相应义务 ；\n（五）遵守学生行为规范，尊敬师长，养成良好的思想品德和\n行为习惯 ；\n法律、法规及学校《章程》规定的其他义务。"},{"q":"学生在什么情况下不得转专业？","a":"（一）新生入学未满一学期或本科三年级以上或专科二年级以上的 ；\n（二）以特殊招生形式录取的（如专升本）；\n（三）国家有相关规定或者录取前与学校有明确约定的（如免费师范生、吐鲁番地区定向免费师范生、内地新疆班、职高对口类等）；\n（四）改变招生层次、类别的（如文科生不能转入理科专业，中外合作办学类、表演类、美术类、体育类等专业学生不能跨类转专业，也不能转入普通类专业）；\n（五）已有过 1 次转专业记录的。"},{"q":"优秀学生奖学金评选等级标准：","a":"一等优秀学生奖学金评选比例为参评总人数3%，标准为2000/人/学年；\n二等优秀学生奖学金评选比例为参评总人数10%，标准为1000/人/学年；"},{"q":"李同学与王同学是多年的好友，王同学英语基础较差，几次参加四级考试未通过，便请求李同学为其代考。李同学碍于情面只得答应，不料在考场被监考老师当场抓获。学校对李同学和王同学应给予什么处分?结合实际谈谈目前考试作弊屡禁不止的原因何在?如何有效解决?","a":""},{"q":"良好的学风是大学生健康成长成才的前提与保障，请联系实际谈谈如何创建班级优良学风。","a":""},{"q":"“让青春在全面建设社会主义现代化国家的火热实践中绽放绚丽之花。”习近平总书记在作党的二十大报告中勉励寄语广大青年，坚定不移听党话、跟党走，怀抱梦想又脚踏实地，敢想敢为又善作善成，立志做有理想、敢担当、能吃苦、肯奋斗的新时代好青年。","a":"请结合自身实际，谈谈如何做一名新时代好青年？"},{"q":"随着互联网技术的不断发展，网络文化对大学生的思维方式、行为模式和价值观念产生越来越显著的影响。作为当代大学生，我们应该如何正确对待网络文化？并结合自身实际谈谈如何为校园网络文化建设贡献力量？","a":""}]};
+
+const STORE = 'xsce_quiz_v1';
+let store = { done: {}, wrong: {}, stats: { right: 0, wrong: 0 } };
+try { const s = JSON.parse(localStorage.getItem(STORE) || 'null'); if (s) store = Object.assign(store, s); } catch(e){}
+function save(){ try { localStorage.setItem(STORE, JSON.stringify(store)); } catch(e){} }
+
+// ── 状态 ──
+let session = null;   // { list, idx, right, wrongList, mode }
+
+const app = document.getElementById('app');
+const titleEl = document.getElementById('title');
+const backBtn = document.getElementById('backBtn');
+const progWrap = document.getElementById('progWrap');
+const progi = document.getElementById('progi');
+const progt = document.getElementById('progt');
+
+const TYPES = {
+  judge:  { name: '判断题', desc: '对 / 错 · 42 题', key: 'judge' },
+  choice: { name: '选择题', desc: 'A/B/C/D · 9 题', key: 'choice' },
+  fill:   { name: '填空题', desc: '手打填空 · 94 题', key: 'fill' },
+  qa:     { name: '简答/论述', desc: '背答案 · 14 题', key: 'qa' },
+};
+
+function shuffle(a){ const r = a.slice(); for (let i = r.length - 1; i > 0; i--){ const j = Math.floor(Math.random()*(i+1)); [r[i],r[j]]=[r[j],r[i]]; } return r; }
+
+function goHome(){
+  session = null;
+  titleEl.textContent = '学生手册 · 刷题';
+  backBtn.style.display = 'none';
+  progWrap.style.display = 'none';
+  renderHome();
+}
+
+function renderHome(){
+  const total = DATA.judge.length + DATA.choice.length + DATA.fill.length + DATA.qa.length;
+  const wrongN = Object.keys(store.wrong).length;
+  let h = '<div class="menu">';
+  h += `<div class="item" onclick="start('all')"><span class="n">共 ${total} 题</span><h3>全部混合刷</h3><p>随机顺序 · 四种题型混着来</p></div>`;
+  for (const k of ['judge','choice','fill','qa']){
+    const t = TYPES[k];
+    h += `<div class="item" onclick="start('${k}')"><span class="n">${DATA[t.key].length} 题</span><h3>${t.name}</h3><p>${t.desc}</p></div>`;
+  }
+  if (wrongN > 0){
+    h += `<div class="item special" onclick="start('wrong')"><span class="n">${wrongN} 题</span><h3>⭐ 错题重练</h3><p>只刷之前做错的</p></div>`;
+  }
+  const s = store.stats;
+  const acc = (s.right + s.wrong) > 0 ? Math.round(s.right / (s.right + s.wrong) * 100) : 0;
+  h += '</div>';
+  h += `<div style="text-align:center;color:var(--dim);font-size:13px;margin-top:18px">
+          累计答对 <b style="color:var(--ok)">${s.right}</b> 题 ，
+          答错 <b style="color:var(--bad)">${s.wrong}</b> 题 ，
+          正确率 <b style="color:var(--accent)">${acc}%</b>
+        </div>`;
+  h += `<div style="text-align:center;margin-top:14px">
+          <button class="back" onclick="resetAll()">清空所有记录</button>
+        </div>`;
+  app.innerHTML = h;
+}
+
+function resetAll(){
+  if (!confirm('确定清空全部刷题记录？')) return;
+  store = { done:{}, wrong:{}, stats:{ right:0, wrong:0 } };
+  save(); renderHome();
+}
+
+function start(mode){
+  let list = [];
+  if (mode === 'all'){
+    list = shuffle([
+      ...DATA.judge.map(x => ({ ...x, type: 'judge' })),
+      ...DATA.choice.map(x => ({ ...x, type: 'choice' })),
+      ...DATA.fill.map(x => ({ ...x, type: 'fill' })),
+      ...DATA.qa.map(x => ({ ...x, type: 'qa' })),
+    ]);
+  } else if (mode === 'wrong'){
+    for (const k of ['judge','choice','fill','qa']){
+      DATA[k].forEach((x, i) => { if (store.wrong[k + ':' + i]) list.push({ ...x, type: k, oi: i }); });
+    }
+    list = shuffle(list);
+  } else {
+    list = shuffle(DATA[mode].map((x, i) => ({ ...x, type: mode, oi: i })));
+  }
+  if (!list.length){ alert('这个类别没有题目'); return; }
+  session = { list, idx: 0, right: 0, wrongList: [], mode };
+  backBtn.style.display = 'block';
+  progWrap.style.display = 'block';
+  titleEl.textContent = mode === 'all' ? '全部混合' : (mode === 'wrong' ? '错题重练' : TYPES[mode].name);
+  renderQ();
+}
+
+function updateProg(){
+  const s = session;
+  const p = s.idx / s.list.length * 100;
+  progi.style.width = p + '%';
+  progt.textContent = `${s.idx} / ${s.list.length}　对 ${s.right}`;
+}
+
+function renderQ(){
+  const s = session;
+  if (s.idx >= s.list.length) return renderResult();
+  updateProg();
+  const q = s.list[s.idx];
+  const t = TYPES[q.type];
+  let h = `<div class="qcard"><div class="qtype">${t.name}　第 ${s.idx+1} 题</div>`;
+  h += `<div class="qtext">${hl(q.q)}</div>`;
+
+  if (q.type === 'judge'){
+    h += `<div class="tf" id="tf">
+            <button onclick="answerTF('对')" id="btnT">√ 对</button>
+            <button onclick="answerTF('错')" id="btnF">× 错</button>
+          </div>`;
+  } else if (q.type === 'choice'){
+    h += `<div class="opts" id="opts">`;
+    q.opts.forEach((o, i) => { h += `<div class="opt" id="opt${i}" onclick="answerChoice(${i})">${hl(o)}</div>`; });
+    h += `</div>`;
+    h += `<div style="color:var(--dim);font-size:13px;margin-top:10px">正确答案可能有多选 · 选完点下面的按钮提交</div>`;
+    h += `<div class="actions"><button class="btn-next" id="submitChoice" onclick="submitChoice()" disabled>提交</button></div>`;
+    s.choiceSel = new Set();
+  } else if (q.type === 'fill'){
+    h += `<div class="fillbox">
+            <input id="fillInput" placeholder="输入答案 · 多个空用空格分开" autocomplete="off">
+            <div class="btns">
+              <button onclick="answerFill()">提交</button>
+              <button onclick="showFillAnswer()">看答案</button>
+            </div>
+          </div>`;
+  } else {
+    h += `<div class="actions"><button class="btn-self" onclick="showQA()">看答案</button></div>`;
+  }
+
+  h += `<div class="ansbox" id="ansbox"></div>`;
+  h += `<div class="feedback" id="fb" style="display:none"></div>`;
+  h += `<div class="actions" id="nextWrap" style="display:none">
+          <button class="btn-next" id="nextBtn" onclick="nextQ()">下一题 →</button>
+        </div>`;
+  h += '</div>';
+  app.innerHTML = h;
+
+  if (q.type === 'fill'){
+    const inp = document.getElementById('fillInput');
+    inp.focus();
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') answerFill(); });
+  }
+}
+
+// 把空格高亮
+function hl(s){
+  return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/(\s{3,}|_{3,})/g, '<span class="blank">＿＿＿</span>');
+}
+
+function showAnswer(ans, ok){
+  const box = document.getElementById('ansbox');
+  box.innerHTML = '<b>正确答案</b><br>' + String(ans).replace(/</g,'&lt;');
+  box.classList.add('show');
+  const fb = document.getElementById('fb');
+  fb.style.display = 'block';
+  if (ok === true){ fb.className = 'feedback good'; fb.textContent = '✅ 答对了'; }
+  else if (ok === false){ fb.className = 'feedback bad'; fb.textContent = '❌ 答错了，看上面的正确答案'; }
+  else { fb.className = 'feedback'; fb.style.color = 'var(--dim)'; fb.textContent = '看完自己判断 · 下面点"我记住了"'; }
+  document.getElementById('nextWrap').style.display = 'flex';
+}
+
+function mark(ok, key){
+  const s = session;
+  const q = s.list[s.idx];
+  const id = q.type + ':' + (q.oi !== undefined ? q.oi : s.idx);
+  if (ok){
+    s.right++;
+    store.stats.right++;
+    delete store.wrong[id];
+  } else {
+    s.wrongList.push(q);
+    store.stats.wrong++;
+    store.wrong[id] = true;
+  }
+  save();
+  updateProg();
+}
+
+function answerTF(val){
+  const q = session.list[session.idx];
+  const ok = (val === q.a);
+  document.getElementById('btnT').disabled = true;
+  document.getElementById('btnF').disabled = true;
+  document.getElementById('btnT').className = (q.a === '对') ? 'ok' : (val === '对' ? 'no' : '');
+  document.getElementById('btnF').className = (q.a === '错') ? 'ok' : (val === '错' ? 'no' : '');
+  mark(ok);
+  showAnswer(q.a, ok);
+}
+
+function answerChoice(i){
+  const q = session.list[session.idx];
+  const s = session;
+  if (s.submitted) return;
+  const el = document.getElementById('opt' + i);
+  if (s.choiceSel.has(i)){ s.choiceSel.delete(i); el.classList.remove('right'); el.classList.add('dim'); }
+  else { s.choiceSel.add(i); el.classList.add('right'); el.classList.remove('dim'); }
+  document.getElementById('submitChoice').disabled = s.choiceSel.size === 0;
+}
+
+function submitChoice(){
+  const q = session.list[session.idx];
+  const s = session;
+  s.submitted = true;
+  const LETTERS = 'ABCDEFGH';
+  const mine = [...s.choiceSel].map(i => LETTERS[i]).sort().join('');
+  const ok = (mine === q.a);
+  q.opts.forEach((o, i) => {
+    const el = document.getElementById('opt' + i);
+    const L = LETTERS[i];
+    el.onclick = null;
+    if (q.a.includes(L)) { el.classList.remove('dim'); el.classList.add('right'); }
+    else if (s.choiceSel.has(i)) { el.classList.remove('right'); el.classList.add('wrong'); }
+    else { el.classList.remove('right'); el.classList.add('dim'); }
+  });
+  const btn = document.getElementById('submitChoice');
+  if (btn) btn.style.display = 'none';
+  mark(ok);
+  showAnswer(q.a, ok);
+  s.submitted = false;
+}
+
+function norm(s){
+  return String(s).toLowerCase()
+    .replace(/[\s，,。．.、；;：:（）()【】\[\]"'"'']/g, '')
+    .trim();
+}
+
+function answerFill(){
+  const q = session.list[session.idx];
+  const inp = document.getElementById('fillInput');
+  const mine = inp.value;
+  if (!mine.trim()) return;
+  const ok = norm(mine) === norm(q.a);
+  inp.disabled = true;
+  mark(ok);
+  showAnswer(q.a, ok);
+}
+
+function showFillAnswer(){
+  const q = session.list[session.idx];
+  const inp = document.getElementById('fillInput');
+  if (inp) inp.disabled = true;
+  mark(false);
+  showAnswer(q.a, null);
+  // 自评按钮
+  addSelfEval();
+}
+
+function showQA(){
+  const q = session.list[session.idx];
+  mark(false);
+  showAnswer(q.a, null);
+  addSelfEval();
+}
+
+function addSelfEval(){
+  const wrap = document.getElementById('nextWrap');
+  const btn = document.createElement('button');
+  btn.className = 'btn-self';
+  btn.textContent = '我记住了 ✓';
+  btn.onclick = () => {
+    const s = session;
+    const q = s.list[s.idx];
+    const id = q.type + ':' + (q.oi !== undefined ? q.oi : s.idx);
+    delete store.wrong[id];
+    store.stats.wrong = Math.max(0, store.stats.wrong - 1);
+    store.stats.right++;
+    save();
+    nextQ();
+  };
+  wrap.insertBefore(btn, wrap.firstChild);
+}
+
+function nextQ(){
+  session.idx++;
+  renderQ();
+}
+
+function renderResult(){
+  const s = session;
+  const total = s.list.length;
+  const acc = Math.round(s.right / total * 100);
+  let h = `<div class="qcard result">
+            <div class="big">${acc}%</div>
+            <div class="lbl">本轮 ${total} 题 · 答对 ${s.right} 题</div>
+            <div class="row">
+              <div class="g"><b>${s.right}</b>答对</div>
+              <div class="r"><b>${total - s.right}</b>答错</div>
+            </div>`;
+  if (acc >= 90) h += '<div style="color:var(--ok);font-size:15px">很棒 · 这个掌握得不错</div>';
+  else if (acc >= 70) h += '<div style="color:var(--warn);font-size:15px">还行 · 错的那几题再刷一遍</div>';
+  else h += '<div style="color:var(--bad);font-size:15px">先把错题重练一遍吧</div>';
+
+  h += `<button onclick="start('${s.mode}')">再来一轮</button>`;
+  if (s.wrongList.length) h += `<button class="sec" onclick="start('wrong')">只刷本轮错题（${s.wrongList.length}）</button>`;
+  h += `<button class="sec" onclick="goHome()">回首页</button>`;
+  h += '</div>';
+  app.innerHTML = h;
+  progWrap.style.display = 'none';
+}
+
+// 快捷键：判断题按 1/2 · 选择题按 A-D
+document.addEventListener('keydown', e => {
+  if (!session) return;
+  const q = session.list[session.idx];
+  if (!q) return;
+  if (q.type === 'judge'){
+    if (e.key === '1') answerTF('对');
+    if (e.key === '2') answerTF('错');
+  }
+  if (q.type === 'choice' && !session.submitted){
+    const L = 'ABCDEFGH';
+    const i = L.indexOf(e.key.toUpperCase());
+    if (i >= 0) answerChoice(i);
+    if (e.key === 'Enter') submitChoice();
+  }
+  if (e.key === 'Enter' && document.getElementById('nextWrap')?.style.display === 'flex'){
+    const nb = document.getElementById('nextBtn');
+    if (nb) nb.click();
+  }
+});
+
+renderHome();
+</script>
+</body>
+</html>
