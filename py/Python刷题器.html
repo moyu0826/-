@@ -679,6 +679,9 @@ document.addEventListener('keydown', e => {
 });
 
 renderHome();
+
+/* 首页后台预热 Pyodide ✦ 点进实操题时就不用等了 */
+setTimeout(() => { ensurePyodide().catch(() => {}); }, 2500);
 </script>
 </body>
 </html>
