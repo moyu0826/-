@@ -142,10 +142,10 @@ const progi = document.getElementById('progi');
 const progt = document.getElementById('progt');
 
 const TYPES = {
-  judge:  { name: '判断题', desc: '对 / 错 · 42 题', key: 'judge' },
-  choice: { name: '选择题', desc: 'A/B/C/D · 9 题', key: 'choice' },
-  fill:   { name: '填空题', desc: '手打填空 · 94 题', key: 'fill' },
-  qa:     { name: '简答/论述', desc: '背答案 · 14 题', key: 'qa' },
+  judge:  { name: '判断题', desc: '点「对」或「错」✦ 键盘按 1 / 2', key: 'judge' },
+  choice: { name: '选择题', desc: '选中后点提交 ✦ 可能是多选', key: 'choice' },
+  fill:   { name: '填空题', desc: '手打答案 ✦ 回车或点提交', key: 'fill' },
+  qa:     { name: '简答/论述', desc: '点看答案 ✦ 然后自评记住了', key: 'qa' },
 };
 
 function shuffle(a){ const r = a.slice(); for (let i = r.length - 1; i > 0; i--){ const j = Math.floor(Math.random()*(i+1)); [r[i],r[j]]=[r[j],r[i]]; } return r; }
